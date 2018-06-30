@@ -1,44 +1,55 @@
-$(document).ready(function() {
+$(document).ready(function () {
   var socket = io();
 
-  socket.on('connect', function() {
+  console.log(moment());
+
+  socket.on('connect', function () {
     console.log('Connected to server');
   });
 
-  socket.on('disconnect', function() {
+  socket.on('disconnect', function () {
     console.log('Disconnected from server');
   });
 
-  socket.on('newMessage', function(message) {
-    console.log('new message', message);
-    var li = $('<li></li>');
-    li.text(`From: ${message.from} Message: ${message.text}`);
+  socket.on('newMessage', function (message) {
+    var formattedTime = moment(message.createdAt).format('h:mm a');
+    var template = $('#message-template').html();
+    var html = Mustache.render(template, {
+      text: message.text,
+      from: message.from,
+      createdAt: formattedTime
+    });
 
-    $('#messages').append(li);
+    $('#messages').append(html);
+
+
   });
 
-  socket.on('newLocationMessage', function(message) {
-    var li = $('<li></li>');
-    var a = $('<a target="_blank">My Current Location</a>');
-    li.text(`${message.from}: `);
-    a.attr('href', message.url);
-    li.append(a);
-    $('#messages').append(li);
+  socket.on('newLocationMessage', function (message) {
+    var formattedTime = moment(message.createdAt).format('h:mm a');
+    var template = $('#location-message-template').html();
+
+    var html = Mustache.render(template, {
+      from: message.from,
+      url: message.url,
+      createdAt: formattedTime
+    });
+    $('#messages').append(html);
+
   });
 
-  $('#message-form').on('submit', function(e) {
+  $('#message-form').on('submit', function (e) {
     e.preventDefault();
     console.log('works');
 
     var messageTextBox = $('[name=message]');
 
     socket.emit(
-      'createMessage',
-      {
+      'createMessage', {
         from: 'User',
         text: messageTextBox.val()
       },
-      function() {
+      function () {
         messageTextBox.val('');
       }
     );
@@ -46,7 +57,7 @@ $(document).ready(function() {
 
   // location send
   var locationButton = $('#send-location');
-  locationButton.on('click', function() {
+  locationButton.on('click', function () {
     if (!navigator.geolocation) {
       return alert('Geolocation not supported');
     }
@@ -54,7 +65,7 @@ $(document).ready(function() {
     locationButton.attr('disabled', 'disabled').text('Sending location..');
 
     navigator.geolocation.getCurrentPosition(
-      function(position) {
+      function (position) {
         locationButton.removeAttr('disabled').text('Send Location');
         console.log(position);
         socket.emit('createLocationMessage', {
@@ -62,7 +73,7 @@ $(document).ready(function() {
           longitude: position.coords.longitude
         });
       },
-      function() {
+      function () {
         locationButton.removeAttr('disabled').text('Send Location');
 
         alert('Unable to fetch location');
