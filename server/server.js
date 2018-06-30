@@ -9,21 +9,17 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIO(server);
 
-console.log(io);
-
 app.use(express.static(publicPath));
 
 io.on('connection', socket => {
   console.log('new user connected');
 
-  socket.emit('newMessage', {
-    from: 'Colin',
-    text: 'Oh hey there guy',
-    createdAt: 123123
-  });
-
   socket.on('createMessage', message => {
-    console.log('it worked', message);
+    io.emit('newMessage', {
+      from: message.from,
+      text: message.text,
+      createdAt: new Date().getTime()
+    });
   });
 
   socket.on('disconnect', () => {
